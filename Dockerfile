@@ -1,17 +1,44 @@
-# clean base image containing only comfyui, comfy-cli and comfyui-manager
+# ============================================================
+# Qwen Image Edit 2511 - RunPod Serverless Worker
+# Base: runpod/worker-comfyui (includes ComfyUI + comfy-cli + ComfyUI-Manager)
+# ============================================================
 FROM runpod/worker-comfyui:5.5.1-base
 
-# install custom nodes into comfyui (first node with --mode remote to fetch updated cache)
-# No registry-verified custom nodes found.
-# Could not resolve unknown_registry node 'MarkdownNote' - no aux_id provided, skipping
-# Could not resolve unknown_registry node 'MarkdownNote' - no aux_id provided, skipping
-# Could not resolve unknown_registry node '74a8e1e2-9cb8-4112-978e-06ce1b5793f1' - no aux_id provided, skipping
+# ============================================================
+# DIFFUSION MODEL
+# 2511 fp8mixed model - uses UNETLoader with weight_dtype: default
+# Stored in: models/diffusion_models/
+# ============================================================
+RUN comfy model download \
+    --url https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2511_fp8mixed.safetensors \
+    --relative-path models/diffusion_models \
+    --filename qwen_image_edit_2511_fp8mixed.safetensors
 
-# download models into comfyui
-RUN comfy model download --url https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_fp8_e4m3fn.safetensors --relative-path models/diffusion_models/qwen-image-edit --filename qwen_image_edit_fp8_e4m3fn.safetensors
-RUN comfy model download --url https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors --relative-path models/clip/qwen --filename qwen_2.5_vl_7b_fp8_scaled.safetensors
-RUN comfy model download --url https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors --relative-path models/vae/qwen-image --filename qwen_image_vae.safetensors
-RUN comfy model download --url https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Edit-Lightning-4steps-V1.0-bf16.safetensors --relative-path models/loras/qwen-image-edit-lightning --filename Qwen-Image-Edit-Lightning-4steps-V1.0-bf16.safetensors
+# ============================================================
+# TEXT ENCODER (CLIP)
+# NOTE: stored in text_encoders/ NOT clip/
+# The CLIPLoader uses type: "qwen_image"
+# ============================================================
+RUN comfy model download \
+    --url https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors \
+    --relative-path models/text_encoders \
+    --filename qwen_2.5_vl_7b_fp8_scaled.safetensors
 
-# copy all input data (like images or videos) into comfyui (uncomment and adjust if needed)
-# COPY input/ /comfyui/input/
+# ============================================================
+# VAE
+# Stored in: models/vae/
+# ============================================================
+RUN comfy model download \
+    --url https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors \
+    --relative-path models/vae \
+    --filename qwen_image_vae.safetensors
+
+# ============================================================
+# LIGHTNING LORA (4-step fast mode)
+# Stored in: models/loras/
+# Enable via enable_turbo_mode: true in payload
+# ============================================================
+RUN comfy model download \
+    --url https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning/resolve/main/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors \
+    --relative-path models/loras \
+    --filename Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
